@@ -20,6 +20,7 @@
 #include "UI/Knob.h"
 #include "UI/ChainDisplay.h"
 #include "UI/FlatToggle.h"
+#include "UI/PresetButton.h"
 
 class RackboxEditor : public juce::AudioProcessorEditor, private juce::Timer
 {
@@ -41,6 +42,7 @@ private:
     std::array<std::unique_ptr<BlockPanel>, RackParams::numBlocks> panels;
     Knob lowpass { "Low-Pass" }, highpass { "High-Pass" }, dryWet { "Dry/Wet" };
     FlatToggle darkButton { "Dark" };
+    PresetButton presetButton;
     bool shownDark = false;
 
     juce::Rectangle<int> wordmarkArea, inputArea, outputArea, footerArea;

@@ -33,7 +33,7 @@ namespace
 }
 
 RackboxEditor::RackboxEditor (RackboxProcessor& p)
-    : AudioProcessorEditor (&p), display (p)
+    : AudioProcessorEditor (&p), display (p), presetButton (p)
 {
     lowpass.attach (p.parameters, RackParams::lowpass);
     highpass.attach (p.parameters, RackParams::highpass);
@@ -46,6 +46,7 @@ RackboxEditor::RackboxEditor (RackboxProcessor& p)
     darkButton.setTooltip ("Dark panel on / off");
     darkButton.onClick = [this] { setDarkMode (darkButton.getToggleState()); };
     addAndMakeVisible (darkButton);
+    addAndMakeVisible (presetButton);
 
     addAndMakeVisible (display);
     addAndMakeVisible (lowpass);
@@ -109,6 +110,7 @@ void RackboxEditor::resized()
 
     // Under the wordmark and its subtitle, which end 66 points down.
     darkButton.setBounds (wordmarkArea.getX(), wordmarkArea.getY() + 70, 52, 17);
+    presetButton.setBounds (darkButton.getRight() + 6, darkButton.getY(), 64, 17);
 
     outputArea = top.removeFromRight (110);
     top.removeFromRight (gap);
