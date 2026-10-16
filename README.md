@@ -16,7 +16,7 @@ not the session's - every Rackbox Plus window and project opens the way you left
 
 ## Install
 
-Download `Rackbox.Plus.1.0.2.pkg` from
+Download `Rackbox.Plus.1.2.0.pkg` from
 [Releases](https://github.com/TZorr/RackboxPlus/releases) and run it; choose AU, VST3 or both - they go into `/Library/Audio/Plug-Ins`. Apple Silicon, macOS
 26.5 or later. The installer is unsigned, so Gatekeeper refuses it at first:
 right-click it and choose Open, or allow it under System Settings › Privacy &
