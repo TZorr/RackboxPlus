@@ -40,6 +40,15 @@ namespace
         }
     }
 
+    /** The menu's presets in the menu's order, for the stepper. */
+    void collectFiles (const juce::File& folder, juce::Array<juce::File>& files)
+    {
+        for (const auto& sub : sortedChildren (folder, juce::File::findDirectories, "*"))
+            collectFiles (sub, files);
+
+        files.addArray (sortedChildren (folder, juce::File::findFiles, juce::String ("*") + PresetFile::extension));
+    }
+
     void showError (const juce::String& title, const juce::Result& result)
     {
         if (result.failed())
@@ -48,11 +57,11 @@ namespace
 }
 
 PresetButton::PresetButton (juce::AudioProcessor& p)
-    : FlatToggle ("Presets"), processor (p)
+    : PanelButton ({}, {}, PanelButton::Style::field), processor (p)
 {
-    // Lit while the menu is open, not on every click.
-    setClickingTogglesState (false);
-    setTooltip ("Load and save presets");
+    tag = PresetFile::extension;
+    setButtonText ("Default");
+    setTooltip ("The presets folder's presets");
 }
 
 juce::File PresetButton::folder()
@@ -117,15 +126,18 @@ void PresetButton::clicked()
     if (files->isEmpty())
         menu.addItem (emptyId, "No presets yet", false);
 
-    setToggleState (true, juce::dontSendNotification);
+    // Lit while the menu is open.
+    active = true;
+    repaint();
 
-    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this),
+    menu.showMenuAsync (panelMenu (*this).withMinimumWidth (localAreaToGlobal (getLocalBounds()).getWidth()),
                         [safe = juce::Component::SafePointer<PresetButton> (this), files] (int result)
     {
         if (safe == nullptr)
             return;
 
-        safe->setToggleState (false, juce::dontSendNotification);
+        safe->active = false;
+        safe->repaint();
 
         if (result == saveId)        safe->choose (true);
         else if (result == loadId)   safe->choose (false);
@@ -135,10 +147,26 @@ void PresetButton::clicked()
     });
 }
 
+void PresetButton::step (int delta)
+{
+    juce::Array<juce::File> files;
+    collectFiles (folder(), files);
+
+    if (files.isEmpty())
+        return;
+
+    const auto n = files.size();
+    const auto at = files.indexOf (lastFile);
+    const auto next = at < 0 ? (delta > 0 ? 0 : n - 1) : ((at + delta) % n + n) % n;
+
+    loadFile (files[next]);
+
+}
+
 void PresetButton::choose (bool saving)
 {
     // A plain name, never one with a dot in it: the macOS save panel selects
-    // only the part before the last dot, so "Kit" + extension would survive
+    // only the part before the last dot, so "Name" + extension would survive
     // every rename as "<new name>" + extension.
     auto name = currentName != nullptr ? currentName() : lastFile.getFileNameWithoutExtension();
     name = juce::File::createLegalFileName (name.isNotEmpty() ? name : juce::String ("Preset"));
@@ -172,7 +200,10 @@ void PresetButton::loadFile (const juce::File& file)
     const auto result = load (processor, file);
 
     if (result.wasOk())
+    {
         lastFile = file;
+        setButtonText (file.getFileNameWithoutExtension());
+    }
 
     showError ("Load Preset", result);
 }
@@ -185,7 +216,10 @@ void PresetButton::saveFile (const juce::File& file)
     const auto result = save (processor, file);
 
     if (result.wasOk())
+    {
         lastFile = file;
+        setButtonText (file.getFileNameWithoutExtension());
+    }
 
     showError ("Save Preset", result);
 }

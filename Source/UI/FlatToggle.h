@@ -1,10 +1,9 @@
 //
 //  FlatToggle.h
-//  Rackbox Plus
+//  Rackbox Plus (from Tonbox)
 //
-//  Kitbox's flat button, as a toggle: a rounded rectangle that fills with the
-//  accent while it is on. Used for each block's Bypass, where "on" means the
-//  block is out of the chain - the lit state is the one worth seeing.
+//  A block's small switch beside its effect's name - SYNC: a
+//  dark field with a hairline that turns, with its word, orange while on.
 //
 
 #pragma once
@@ -16,18 +15,32 @@
 class FlatToggle : public juce::ToggleButton
 {
 public:
-    explicit FlatToggle (const juce::String& text) : juce::ToggleButton (text) {}
+    explicit FlatToggle (const juce::String& text) : juce::ToggleButton (text)
+    {
+        setMouseCursor (juce::MouseCursor::PointingHandCursor);
+    }
+
+    /** The width the word needs, with the mockup's 9 points either side. */
+    int getIdealWidth() const
+    {
+        return (int) std::ceil (juce::GlyphArrangement::getStringWidth (font(), getButtonText().toUpperCase())) + 18 + 2;
+    }
 
     void paintButton (juce::Graphics& g, bool highlighted, bool down) override
     {
-        const auto bounds = getLocalBounds().toFloat();
+        const auto bounds = getLocalBounds().toFloat().reduced (0.5f);
         const auto lit = getToggleState();
 
-        g.setColour (lit ? Palette::accent : (highlighted || down ? Palette::buttonHover : Palette::button));
-        g.fillRoundedRectangle (bounds, 5.0f);
+        g.setColour (highlighted || down ? Palette::field.brighter (0.07f) : Palette::field);
+        g.fillRoundedRectangle (bounds, 3.0f);
+        g.setColour (lit ? Palette::accent : Palette::fieldLine);
+        g.drawRoundedRectangle (bounds, 3.0f, 1.0f);
 
-        g.setColour (lit ? Palette::pad : Palette::ink);
-        g.setFont (Palette::label (9.5f));
+        g.setColour (lit ? Palette::accent : Palette::inkDim);
+        g.setFont (font());
         g.drawText (getButtonText().toUpperCase(), bounds, juce::Justification::centred);
     }
+
+private:
+    static juce::Font font() { return Palette::font (10.5f, true, 0.06f); }
 };

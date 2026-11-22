@@ -15,10 +15,16 @@
 //  Labels are kept as given and upper-cased only when drawn, so the panel can
 //  read back "Ping-Pong" rather than "PING-PONG".
 //
+//  Since 0.8.0 (the Kitbox-Look mockup) two looks: the Type row fills the
+//  lit button with that family's colour - each button has its own - and the
+//  Subtype row outlines the lit one in the block's colour.
+//
 
 #pragma once
 
 #include <juce_gui_basics/juce_gui_basics.h>
+
+#include "Palette.h"
 
 class ChoiceButtons : public juce::Component
 {
@@ -27,6 +33,15 @@ public:
 
     void setLabels (const juce::StringArray& newLabels);
     void setSelected (int index);
+
+    enum class Style { filled, outlined };
+    void setStyle (Style newStyle) { style = newStyle; repaint(); }
+
+    /** The colour zone every button lights in. */
+    void setZone (Palette::ZoneId zoneToUse) { zone = zoneToUse; zoneFor = nullptr; repaint(); }
+
+    /** Or one per button: the Type row's families. */
+    std::function<Palette::ZoneId (int)> zoneFor;
 
     juce::String getSelectedText() const;
 
@@ -41,6 +56,8 @@ private:
 
     juce::StringArray labels;
     int selected = -1, hovered = -1;
+    Palette::ZoneId zone = Palette::ZoneId::none;
+    Style style = Style::filled;
 
     static constexpr float gap = 4.0f;
 };

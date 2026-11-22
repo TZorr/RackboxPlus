@@ -294,6 +294,17 @@ void RackboxProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
             for (int i = 0; i < n; ++i)
                 l[i] = 0.5f * (l[i] + r[i]);
     }
+
+    // The meter beside Dry/Wet: the output's peak, held until the panel takes it.
+    for (int side = 0; side < 2; ++side)
+    {
+        const auto* samples = side == 1 && stereoBuffer ? right : left;
+        const auto range = juce::FloatVectorOperations::findMinAndMax (samples, total);
+        const auto magnitude = juce::jmax (-range.getStart(), range.getEnd());
+        auto& held = meterPeaks[(size_t) side];
+        auto current = held.load (std::memory_order_relaxed);
+        while (magnitude > current && ! held.compare_exchange_weak (current, magnitude)) {}
+    }
 }
 
 //==============================================================================

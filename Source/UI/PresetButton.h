@@ -2,7 +2,9 @@
 //  PresetButton.h
 //  Rackbox Plus (from Tonbox)
 //
-//  The plugin's own preset menu, beside the Dark switch. Logic has a preset
+//  The plugin's own preset menu: the header's preset field, which shows the
+//  preset last loaded or saved ("Default" before any), with < > beside it
+//  and LOAD / SAVE after it. Logic has a preset
 //  menu of its own for every AU; a VST3 host such as Bitwig has none, so
 //  without this the plugin could neither load nor save a setting there.
 //
@@ -15,9 +17,9 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
-#include "FlatToggle.h"
+#include "Controls.h"
 
-class PresetButton : public FlatToggle
+class PresetButton : public PanelButton
 {
 public:
     explicit PresetButton (juce::AudioProcessor&);
@@ -28,6 +30,13 @@ public:
     /** Called with the preset's name just before its state is taken, so a
         plugin that keeps a name in its state can store it there. */
     std::function<void (const juce::String&)> onSaving;
+
+    /** Loads the next (+1) or previous (-1) preset of the menu's list, wrapping
+        round. Unset lastFile: + starts at the first, - at the last. */
+    void step (int delta);
+
+    /** A file panel to save the setting as a preset (true), or to load one. */
+    void choose (bool saving);
 
     /** ~/Library/Audio/Presets/<company>/<plugin>/, created if it is missing. */
     static juce::File folder();
@@ -40,7 +49,6 @@ public:
 
 private:
     void clicked() override;
-    void choose (bool saving);
     void loadFile (const juce::File&);
     void saveFile (const juce::File&);
 

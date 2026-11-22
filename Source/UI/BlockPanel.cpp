@@ -12,11 +12,12 @@
 
 namespace
 {
-    constexpr int padding = 8;
-    constexpr int titleHeight = 22;
-    constexpr int rowHeight = 28, rowGap = 6;
-    constexpr int dialSize = 50;   // the dials are as small as still reads well
-    constexpr int selectorWidth = 330;   // five Modulation subtypes still read
+    // The mockup's measures.
+    constexpr int stripWidth = 26, stripInset = 6;
+    constexpr int choiceColumn = 340;
+    constexpr int nameHeight = 22, typeHeight = 28, subHeight = 26, choiceGap = 7;
+    constexpr int mixWidth = 104;
+    constexpr int knobDial = 44, mixDial = 48;
 
     /** The full names do not fit four across; the title and the display keep them. */
     juce::String shortName (int category)
@@ -58,8 +59,43 @@ void BlockPanel::choose (int category, int subtype, const char* changedSuffix, i
         }
 }
 
+BlockPanel::Power::Power (int blockIndex)
+    : juce::Button ("Block " + juce::String (blockIndex + 1)), title ("BLOCK " + juce::String (blockIndex + 1))
+{
+    setClickingTogglesState (true);
+    setMouseCursor (juce::MouseCursor::PointingHandCursor);
+}
+
+void BlockPanel::Power::paintButton (juce::Graphics& g, bool highlighted, bool down)
+{
+    // The toggle is the bypass: on means off.
+    const auto bounds = getLocalBounds().toFloat().reduced (0.5f);
+    const auto on = ! getToggleState();
+    const auto colours = Palette::zone (zone);
+
+    g.setColour (highlighted || down ? Palette::powerFace.brighter (0.07f) : Palette::powerFace);
+    g.fillRoundedRectangle (bounds, 3.0f);
+    g.setColour (Palette::powerLine);
+    g.drawRoundedRectangle (bounds, 3.0f, 1.0f);
+
+    // The dot over the title, the title read bottom to top; centred as a pair.
+    const auto font = Palette::font (11.0f, true, 0.14f);
+    const auto length = juce::GlyphArrangement::getStringWidth (font, title);
+    const auto top = bounds.getCentreY() - (6.0f + 6.0f + length) * 0.5f;
+
+    g.setColour (on ? colours.line : Palette::powerOffDot);
+    g.fillEllipse (bounds.getCentreX() - 3.0f, top, 6.0f, 6.0f);
+
+    const auto centre = juce::Point<float> (bounds.getCentreX(), top + 12.0f + length * 0.5f);
+    juce::Graphics::ScopedSaveState state (g);
+    g.addTransform (juce::AffineTransform::rotation (-juce::MathConstants<float>::halfPi, centre.x, centre.y));
+    g.setColour (on ? colours.label : Palette::powerOffInk);
+    g.setFont (font);
+    g.drawText (title, juce::Rectangle<float> (length + 4.0f, 14.0f).withCentre (centre), juce::Justification::centred, false);
+}
+
 BlockPanel::BlockPanel (RackboxProcessor& processorToUse, int blockIndex)
-    : processor (processorToUse), block (blockIndex)
+    : processor (processorToUse), block (blockIndex), bypass (blockIndex)
 {
     auto& state = processor.parameters;
     const auto id = [this] (const char* suffix) { return RackParams::blockId (block, suffix); };
@@ -67,6 +103,7 @@ BlockPanel::BlockPanel (RackboxProcessor& processorToUse, int blockIndex)
     for (int k = 0; k < RackParams::Block::numKnobs; ++k)
     {
         knobs[(size_t) k] = std::make_unique<Knob> ("Knob " + juce::String (k + 1));
+        knobs[(size_t) k]->setDialSize (knobDial);
         knobs[(size_t) k]->attach (state, id (RackParams::Block::knobs[k]));
     }
 
@@ -87,6 +124,10 @@ BlockPanel::BlockPanel (RackboxProcessor& processorToUse, int blockIndex)
         categories.add (shortName (c));
 
     type.setLabels (categories);
+    type.zoneFor = [] (int category) { return Palette::categoryZone (category); };
+    sub.setStyle (ChoiceButtons::Style::outlined);
+    mix.setZone (Palette::ZoneId::neutral);
+    mix.setDialSize (mixDial);
     type.onSelect = [this] (int i)
     {
         const auto stored = (int) processor.parameters.getRawParameterValue (RackParams::blockId (block, RackParams::Block::sub))->load();
@@ -139,6 +180,16 @@ void BlockPanel::refresh()
     type.setSelected (s.category);
     sub.setSelected (s.subtype);
 
+    if (s.category != shownCategory)
+    {
+        const auto zone = Palette::categoryZone (s.category);
+        sub.setZone (zone);
+        for (auto& knob : knobs)
+            knob->setZone (zone);
+        bypass.zone = zone;
+        bypass.repaint();
+    }
+
     if (s.category != shownCategory || s.subtype != shownSubtype)
     {
         const auto& info = EffectCatalog::info (s.category, s.subtype);
@@ -162,6 +213,7 @@ void BlockPanel::refresh()
             }
         }
 
+        shownName = juce::String (EffectCatalog::categoryName (s.category)) + utf8 (" \xc2\xb7 ") + info.name;
         shownCategory = s.category;
         shownSubtype = s.subtype;
         repaint();
@@ -204,57 +256,102 @@ void BlockPanel::refresh()
 
     if (s.bypass != shownBypass)
     {
+        // A bypassed block's knobs fade back; they still turn.
         shownBypass = s.bypass;
+
+        for (auto& knob : knobs)
+            knob->setAlpha (s.bypass ? 0.4f : 1.0f);
+        mix.setAlpha (s.bypass ? 0.4f : 1.0f);
+
         repaint();
     }
+
+    placeStep();
+}
+
+void BlockPanel::placeStep()
+{
+    // SYNC and PRE at the right of the effect's name, as wide as their word.
+    const auto slot = [this] (int width)
+    {
+        return juce::Rectangle<int> (nameArea.getRight() - width, nameArea.getCentreY() - 11, width, 22);
+    };
+
+    sync.setBounds (slot (sync.getIdealWidth()));
+    pre.setBounds (slot (pre.getIdealWidth()));
 }
 
 void BlockPanel::paint (juce::Graphics& g)
 {
     const auto bounds = getLocalBounds().toFloat();
+    constexpr float radius = 4.0f;
 
-    g.setColour (Palette::section);
-    g.fillRoundedRectangle (bounds, 6.0f);
+    juce::Path shape;
+    shape.addRoundedRectangle (bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight(), radius, radius,
+                               roundTop, roundTop, roundBottom, roundBottom);
+    g.setColour (Palette::rackPanel);
+    g.fillPath (shape);
 
-    auto titleRow = getLocalBounds().reduced (padding + 2, 0).removeFromTop (titleHeight).toFloat().withTrimmedTop (3.0f);
+    // Mix's column, a step darker, and the uprights before the knobs and Mix.
+    {
+        juce::Graphics::ScopedSaveState state (g);
+        g.reduceClipRegion (shape);
+        g.setColour (Palette::mixColumn);
+        g.fillRect (mixArea);
+    }
 
-    g.setColour (Palette::blockColour (block));
-    g.fillEllipse (titleRow.getX(), titleRow.getCentreY() - 3.0f, 6.0f, 6.0f);
+    g.setColour (Palette::rackDivider);
+    g.fillRect (knobArea.getX() - 1, 0, 1, getHeight());
+    g.fillRect (mixArea.getX() - 1, 0, 1, getHeight());
 
-    g.setColour (Palette::ink);
-    g.setFont (Palette::label (10.0f));
-    g.drawText ("BLOCK " + juce::String (block + 1), titleRow.withTrimmedLeft (12.0f), juce::Justification::centredLeft);
+    // The effect's name.
+    const auto zone = Palette::zone (Palette::categoryZone (shownCategory));
+    auto name = nameArea;
+    if (sync.isVisible())
+        name.setRight (sync.getX() - 8);
+    if (pre.isVisible())
+        name.setRight (pre.getX() - 8);
+
+    g.setColour (shownBypass ? Palette::powerOffInk : zone.label);
+    g.setFont (Palette::font (11.0f, true, 0.06f));
+    g.drawFittedText (shownName.toUpperCase(), name, juce::Justification::centredLeft, 1, 0.8f);
 }
 
 void BlockPanel::resized()
 {
-    auto area = getLocalBounds().reduced (padding, 0);
+    auto area = getLocalBounds();
 
-    // Bypass sits in the title row, at the right: the effect's name is already on
-    // the buttons, so the row's right half was free.
-    auto titleRow = area.removeFromTop (titleHeight);
-    bypass.setBounds (titleRow.removeFromRight (68).withSizeKeepingCentre (68, 18).translated (0, 1));
-    titleRow.removeFromRight (6);
-    auto slot = titleRow.removeFromRight (68).withSizeKeepingCentre (68, 18).translated (0, 1);
-    sync.setBounds (slot);
-    pre.setBounds (slot);
+    // The strip down the left edge.
+    bypass.setBounds (area.removeFromLeft (stripInset + stripWidth).withTrimmedLeft (stripInset).reduced (0, 8));
 
-    area.removeFromBottom (4);
+    // The name and the buttons, 12 in on the left and 14 on the right, centred upright.
+    auto choices = area.removeFromLeft (choiceColumn).withTrimmedLeft (12).withTrimmedRight (14);
+    choices = choices.withSizeKeepingCentre (choices.getWidth(), nameHeight + choiceGap + typeHeight + choiceGap + subHeight);
+    nameArea = choices.removeFromTop (nameHeight);
+    choices.removeFromTop (choiceGap);
+    type.setBounds (choices.removeFromTop (typeHeight));
+    choices.removeFromTop (choiceGap);
+    sub.setBounds (choices);
 
-    // The selectors stacked on the left; nine knob places on the right, Mix in the last.
-    auto selectors = area.removeFromLeft (selectorWidth);
-    area.removeFromLeft (16);
+    // Mix's column at the right, after a 1-point upright; the eight knobs between.
+    mixArea = area.removeFromRight (mixWidth);
+    area.removeFromRight (1);
+    area.removeFromLeft (1);
+    knobArea = area;
 
-    selectors = selectors.withSizeKeepingCentre (selectors.getWidth(), 2 * rowHeight + rowGap);
-    type.setBounds (selectors.removeFromTop (rowHeight));
-    selectors.removeFromTop (rowGap);
-    sub.setBounds (selectors.removeFromTop (rowHeight));
+    mix.setBounds (mixArea.withSizeKeepingCentre (mixArea.getWidth(), mix.getStackedHeight()));
 
-    auto knobRow = area.withSizeKeepingCentre (area.getWidth(), dialSize + Knob::labelHeight);
-    const auto cell = knobRow.getWidth() / (RackParams::Block::numKnobs + 1);
+    auto grid = area.reduced (4, 0);
+    const auto height = knobs[0]->getStackedHeight();
+    const auto cell = (float) grid.getWidth() / (float) RackParams::Block::numKnobs;
+    const auto y = grid.getCentreY() - height / 2;
 
-    for (auto& knob : knobs)
-        knob->setBounds (knobRow.removeFromLeft (cell));
+    for (int k = 0; k < RackParams::Block::numKnobs; ++k)
+    {
+        const auto x = grid.getX() + juce::roundToInt (cell * (float) k);
+        const auto w = grid.getX() + juce::roundToInt (cell * (float) (k + 1)) - x;
+        knobs[(size_t) k]->setBounds (x, y, w, height);
+    }
 
-    mix.setBounds (knobRow);
+    placeStep();
 }

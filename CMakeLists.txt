@@ -24,7 +24,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 # 1.0.2: a Dark panel, as on Kitbox and Rackbox, switched under the wordmark and kept per user.
-project(RackboxPlus VERSION 1.2.0)
+project(RackboxPlus VERSION 1.3.0)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -82,6 +82,7 @@ set(RACKBOX_UI_SOURCES
     Source/UI/Knob.cpp
     Source/UI/BlockPanel.cpp
     Source/UI/ChoiceButtons.cpp
+    Source/UI/Controls.cpp
     Source/UI/ChainDisplay.cpp
     Source/UI/PresetButton.cpp)
 

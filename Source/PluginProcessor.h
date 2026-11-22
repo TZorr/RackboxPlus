@@ -73,9 +73,15 @@ public:
     double getHostBpm() const noexcept          { return hostBpm.load(); }
     double getHostBeatsPerBar() const noexcept  { return hostBeatsPerBar.load(); }
 
+    /** The output's peak per side since the panel last took it - the meter
+        beside Dry/Wet. */
+    float takeMeterPeak (int side) noexcept { return meterPeaks[(size_t) (side & 1)].exchange (0.0f); }
+
     juce::AudioProcessorValueTreeState parameters;
 
 private:
+    std::array<std::atomic<float>, 2> meterPeaks {};
+
     InputFilters filters;
     std::array<EffectBlock, RackParams::numBlocks> blocks;
     std::vector<float> dryLeft, dryRight;

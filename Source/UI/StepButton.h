@@ -38,15 +38,24 @@ public:
 
     const juce::String& getText() const noexcept    { return text; }
 
+    /** The width the text needs, with 9 points either side. */
+    int getIdealWidth() const
+    {
+        return (int) std::ceil (juce::GlyphArrangement::getStringWidth (font(), text.toUpperCase())) + 18 + 2;
+    }
+
     void paint (juce::Graphics& g) override
     {
-        const auto bounds = getLocalBounds().toFloat();
+        // As SYNC beside it on other blocks: a dark field, orange while set.
+        const auto bounds = getLocalBounds().toFloat().reduced (0.5f);
 
-        g.setColour (lit ? Palette::accent : (hovered ? Palette::buttonHover : Palette::button));
-        g.fillRoundedRectangle (bounds, 5.0f);
+        g.setColour (hovered ? Palette::field.brighter (0.07f) : Palette::field);
+        g.fillRoundedRectangle (bounds, 3.0f);
+        g.setColour (lit ? Palette::accent : Palette::fieldLine);
+        g.drawRoundedRectangle (bounds, 3.0f, 1.0f);
 
-        g.setColour (lit ? Palette::pad : Palette::ink);
-        g.setFont (Palette::label (9.5f));
+        g.setColour (lit ? Palette::accent : Palette::inkDim);
+        g.setFont (font());
         g.drawFittedText (text.toUpperCase(), getLocalBounds().reduced (3, 0), juce::Justification::centred, 1, 0.7f);
     }
 
@@ -60,6 +69,8 @@ public:
     void mouseExit  (const juce::MouseEvent&) override  { hovered = false; repaint(); }
 
 private:
+    static juce::Font font() { return Palette::font (10.5f, true, 0.06f); }
+
     juce::String text;
     bool lit = false, hovered = false;
 };
