@@ -11,12 +11,15 @@ Family: [Kitbox](https://github.com/TZorr/Kitbox) (16-pad drum sampler), [Rackbo
 
 <img src="screenshot-dark.png" width="700" alt="Rackbox Plus in Logic Pro with the dark panel">
 
-**Dark** under the wordmark switches the panel to dark; the choice is yours,
-not the session's - every Rackbox Plus window and project opens the way you left it.
+Since 1.3.0 the panel follows Kitbox 0.10's look: laid out at 1416 x 758, it
+scales as a whole - drag the window's corner, at a fixed aspect ratio, from 60
+to 140 %. It opens at 85 % the first time and remembers the size. The moon at
+the top right switches the panel to dark; theme and size are yours, not the
+session's - every Rackbox Plus window and project opens the way you left it.
 
 ## Install
 
-Download `Rackbox.Plus.1.2.0.pkg` from
+Download `Rackbox.Plus.1.3.0.pkg` from
 [Releases](https://github.com/TZorr/RackboxPlus/releases) and run it; choose AU, VST3 or both - they go into `/Library/Audio/Plug-Ins`. Apple Silicon, macOS
 26.5 or later. The installer is unsigned, so Gatekeeper refuses it at first:
 right-click it and choose Open, or allow it under System Settings › Privacy &
@@ -122,7 +125,7 @@ the source) and mono in / mono out (the stereo chain is folded to mono). The AU 
 
 ## Presets
 
-**PRESETS** beside the Dark switch opens the plugin's own preset menu. It lists `~/Library/Audio/Presets/T'Zorr/Rackbox Plus/`, and each subfolder becomes a submenu. It also has Save Preset…, Load Preset… and Show in Finder. Presets are `.rackboxplus` files: plain XML that names the plugin and holds its settings, readable in any text editor. Logic keeps its own `.aupreset` settings in its own menu; the two do not mix. In VST3 hosts such as Bitwig this menu is the only way to load and save presets.
+The preset field in the header opens the plugin's own preset menu; **<** and **>** step through the presets, **Load** and **Save** go straight to the file dialogs. It lists `~/Library/Audio/Presets/T'Zorr/Rackbox Plus/`, and each subfolder becomes a submenu. It also has Save Preset…, Load Preset… and Show in Finder. Presets are `.rackboxplus` files: plain XML that names the plugin and holds its settings, readable in any text editor. Logic keeps its own `.aupreset` settings in its own menu; the two do not mix. In VST3 hosts such as Bitwig this menu is the only way to load and save presets.
 
 ## Licence
 
