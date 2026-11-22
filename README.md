@@ -5,7 +5,7 @@ VST3 and a standalone app, built with JUCE 9 - but every effect gets up to eight
 of two, and the four blocks sit as rows one under the other. A separate plugin with its own
 identity, so Rackbox stays as lean as it is.
 
-Family: [Kitbox](https://github.com/TZorr/Kitbox) (16-pad drum sampler), [Rackbox](https://github.com/TZorr/Rackbox) (four-slot multi-effect), [FMBox](https://github.com/TZorr/FMBox) (eight-sound FM drum synth), [Chordbox](https://github.com/TZorr/Chordbox) (16-pad chord generator), [Transmute](https://github.com/TZorr/Transmute) (drum resynthesis).
+Family: [Kitbox](https://github.com/TZorr/Kitbox) (16-pad drum sampler), [Rackbox](https://github.com/TZorr/Rackbox) (four-slot multi-effect), [FMBox](https://github.com/TZorr/FMBox) (eight-sound FM drum synth), [Chordbox](https://github.com/TZorr/Chordbox) (16-pad chord generator), [Transmute](https://github.com/TZorr/Transmute) (drum resynthesis), [Clearbox](https://github.com/TZorr/Clearbox) (target-curve dynamic EQ).
 
 <img src="screenshot.png" width="700" alt="Rackbox Plus in Logic Pro">
 
